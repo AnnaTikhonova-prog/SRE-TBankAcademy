@@ -1,0 +1,63 @@
+# Стек ShiftPlanner: PostgreSQL + бэкенд (FastAPI) + фронтенд (React/nginx).
+#
+# Запуск:  docker compose up --build
+# Стоп:    docker compose down        (с очисткой БД: docker compose down -v)
+#
+# Все параметры берутся из .env (см. .env.example) — фактор III.
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: shiftplanner_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-shiftplanner}
+      POSTGRES_USER: ${POSTGRES_USER:-shiftplanner}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Задайте POSTGRES_PASSWORD в файле .env}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      # Схема и демо-данные применяются при первом старте на пустом volume.
+      - ./backend/db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./backend/db/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    container_name: shiftplanner_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-shiftplanner}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-shiftplanner}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Задайте JWT_SECRET_KEY в файле .env}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  frontend:
+    build: ./frontend
+    container_name: shiftplanner_frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  db_data:
