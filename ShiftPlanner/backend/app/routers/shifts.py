@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.database import get_db
+from app.metrics import SHIFTS_CREATED
 from app.deps import get_current_user, get_manager_company
 
 router = APIRouter()
@@ -143,6 +144,7 @@ def create_shift(
     db.add(shift)
     db.commit()
     db.refresh(shift)
+    SHIFTS_CREATED.inc()
     return _to_shift_read(shift)
 
 

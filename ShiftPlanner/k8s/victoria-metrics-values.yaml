@@ -1,0 +1,42 @@
+# Values for the official VictoriaMetrics Single Helm chart.
+# Pod discovery only keeps targets with prometheus.io/scrape="true".
+server:
+  replicaCount: 1
+  retentionPeriod: "7d"
+  persistentVolume:
+    enabled: true
+    size: 5Gi
+  scrape:
+    enabled: true
+    config:
+      global:
+        scrape_interval: 15s
+        scrape_timeout: 10s
+      scrape_configs:
+        - job_name: victoria-metrics
+          static_configs:
+            - targets: ["localhost:8428"]
+        - job_name: kubernetes-pods
+          kubernetes_sd_configs:
+            - role: pod
+          relabel_configs:
+            - action: keep
+              source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+              regex: "true"
+            - action: replace
+              source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+              target_label: __metrics_path__
+              regex: (.+)
+            - action: replace
+              source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+              target_label: __address__
+              regex: ([^:]+)(?::\d+)?;(\d+)
+              replacement: $1:$2
+            - action: labelmap
+              regex: __meta_kubernetes_pod_label_(.+)
+            - action: replace
+              source_labels: [__meta_kubernetes_namespace]
+              target_label: namespace
+            - action: replace
+              source_labels: [__meta_kubernetes_pod_name]
+              target_label: pod

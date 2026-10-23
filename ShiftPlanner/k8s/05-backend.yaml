@@ -1,0 +1,110 @@
+# Бэкенд (FastAPI): Deployment + Service.
+#
+# Образ shiftplanner-backend:1.2 собирается локально (backend/Dockerfile)
+# и загружается в minikube командой `minikube image load`.
+# imagePullPolicy: IfNotPresent — не тянуть образ из внешнего registry.
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: shiftplanner
+spec:
+  # Стартовое число реплик; в демо масштабируется через kubectl scale.
+  # Бэкенд stateless (JWT, состояние в PostgreSQL), поэтому реплики
+  # взаимозаменяемы и Service балансирует запросы между ними.
+  replicas: 3
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: backend
+          image: shiftplanner-backend:1.2
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            # DATABASE_URL собирается из частей: $(VAR) подставляются
+            # из переменных, объявленных выше в этом же списке env.
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: shiftplanner-config
+                  key: POSTGRES_USER
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: shiftplanner-config
+                  key: POSTGRES_DB
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: shiftplanner-secret
+                  key: POSTGRES_PASSWORD
+            - name: DATABASE_URL
+              value: "postgresql+psycopg://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres:5432/$(POSTGRES_DB)"
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: shiftplanner-secret
+                  key: JWT_SECRET_KEY
+            - name: JWT_ALGORITHM
+              valueFrom:
+                configMapKeyRef:
+                  name: shiftplanner-config
+                  key: JWT_ALGORITHM
+            - name: ACCESS_TOKEN_EXPIRE_MINUTES
+              valueFrom:
+                configMapKeyRef:
+                  name: shiftplanner-config
+                  key: ACCESS_TOKEN_EXPIRE_MINUTES
+            - name: CORS_ORIGINS
+              valueFrom:
+                configMapKeyRef:
+                  name: shiftplanner-config
+                  key: CORS_ORIGINS
+          # readiness: готов ли под принимать трафик (включая доступность БД).
+          readinessProbe:
+            httpGet:
+              path: /health/db
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          # liveness: жив ли процесс; при сбое kubelet перезапустит контейнер.
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+---
+# Внутренний Service: nginx фронтенда проксирует /api на http://backend:8000.
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: shiftplanner
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 8000
+      targetPort: 8000

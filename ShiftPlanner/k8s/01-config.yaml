@@ -1,0 +1,15 @@
+# Несекретная конфигурация приложения (фактор III — конфигурация в окружении).
+# Значения отсюда попадают в переменные окружения контейнеров.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: shiftplanner-config
+  namespace: shiftplanner
+data:
+  POSTGRES_DB: "shiftplanner"
+  POSTGRES_USER: "shiftplanner"
+  JWT_ALGORITHM: "HS256"
+  ACCESS_TOKEN_EXPIRE_MINUTES: "60"
+  # CORS нужен только для локальной разработки фронтенда;
+  # в кластере фронтенд и API обслуживаются с одного origin (nginx-прокси).
+  CORS_ORIGINS: "http://localhost:5173"

@@ -1,0 +1,6 @@
+# Все ресурсы приложения живут в отдельном namespace shiftplanner,
+# чтобы не смешиваться со служебными нагрузками кластера.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shiftplanner

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.database import get_db
+from app.metrics import AVAILABILITY_BLOCKS_CREATED
 from app.deps import get_current_employee
 
 router = APIRouter()
@@ -45,6 +46,7 @@ def create_availability(
             detail="Такой интервал уже существует",
         )
     db.refresh(block)
+    AVAILABILITY_BLOCKS_CREATED.inc()
     return block
 
 

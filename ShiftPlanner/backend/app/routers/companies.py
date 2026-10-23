@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.database import get_db
+from app.metrics import COMPANIES_CREATED, EMPLOYEES_JOINED
 from app.deps import get_current_user, get_manager_company, require_employee, require_manager
 
 router = APIRouter()
@@ -56,6 +57,7 @@ def create_company(
     db.add(company)
     db.commit()
     db.refresh(company)
+    COMPANIES_CREATED.inc()
     return company
 
 
@@ -127,4 +129,5 @@ def join_company(
     db.add(employee)
     db.commit()
     db.refresh(employee)
+    EMPLOYEES_JOINED.inc()
     return employee

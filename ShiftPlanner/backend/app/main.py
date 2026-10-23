@@ -4,24 +4,25 @@
 """
 
 import logging
+import time
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi import Request, Response
+from prometheus_client import REGISTRY
+from prometheus_client.openmetrics.exposition import CONTENT_TYPE_LATEST, generate_latest
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.config import get_settings
 from app.database import SessionLocal
+from app.metrics import HTTP_REQUESTS, HTTP_REQUEST_DURATION
 from app.routers import auth, availability, branches, companies, employees, positions, shifts
 
-# Фактор XI: логи пишем в stdout, их забирает docker logs / оркестратор.
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-)
+# Фактор XI: структурированные JSON-логи в stdout собирает Vector.
 logger = logging.getLogger("shiftplanner")
 
 settings = get_settings()
@@ -50,6 +51,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.middleware("http")
+async def collect_http_metrics(request: Request, call_next):
+    """Record request totals and latency with route templates, not raw IDs."""
+    if request.url.path == "/metrics":
+        return await call_next(request)
+
+    started = time.perf_counter()
+    status_code = 500
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+        return response
+    finally:
+        route = request.scope.get("route")
+        path = getattr(route, "path", "unmatched")
+        HTTP_REQUESTS.labels(request.method, path, str(status_code)).inc()
+        HTTP_REQUEST_DURATION.labels(request.method, path).observe(
+            time.perf_counter() - started
+        )
+
 app.include_router(auth.router, prefix="/auth", tags=["Аутентификация"])
 app.include_router(companies.router, prefix="/companies", tags=["Компании"])
 app.include_router(branches.router, prefix="/branches", tags=["Филиалы"])
@@ -63,6 +85,15 @@ app.include_router(shifts.router, prefix="/shifts", tags=["Смены"])
 def health_check():
     """Liveness-проба: процесс жив и обслуживает запросы."""
     return {"status": "ok"}
+
+
+@app.get("/metrics", include_in_schema=False, tags=["Служебные"])
+def metrics_endpoint():
+    """Expose runtime and application metrics in OpenMetrics format."""
+    return Response(
+        content=generate_latest(REGISTRY),
+        headers={"Content-Type": CONTENT_TYPE_LATEST},
+    )
 
 
 @app.get("/health/db", tags=["Служебные"])

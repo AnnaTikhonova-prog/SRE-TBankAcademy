@@ -1,0 +1,58 @@
+# Фронтенд (React, собранная статика + nginx): Deployment + Service NodePort.
+#
+# Образ shiftplanner-frontend:1.0 собирается локально (frontend/Dockerfile)
+# и загружается в minikube командой `minikube image load`.
+# NodePort — единственная точка входа в приложение с хост-машины:
+# minikube service frontend -n shiftplanner  (или http://$(minikube ip):30080)
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: shiftplanner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: shiftplanner-frontend:1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+
+---
+# NodePort: открывает приложение наружу на порту 30080 узла minikube.
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: shiftplanner
+spec:
+  type: NodePort
+  selector:
+    app: frontend
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30080

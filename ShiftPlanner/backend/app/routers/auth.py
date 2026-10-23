@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.database import get_db
+from app.metrics import AUTH_LOGINS, REGISTERED_USERS
 from app.deps import get_current_user
 from app.security import create_access_token, get_password_hash, verify_password
 
@@ -70,6 +71,7 @@ def register(payload: schemas.RegisterRequest, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
+    REGISTERED_USERS.labels(role=user.role).inc()
     return _build_user_read(db, user)
 
 
@@ -78,11 +80,13 @@ def login(payload: schemas.LoginRequest, db: Session = Depends(get_db)):
     """Вход по email и паролю, возвращает JWT."""
     user = db.query(models.User).filter(models.User.email == payload.email).first()
     if user is None or not verify_password(payload.password, user.password_hash):
+        AUTH_LOGINS.labels(result="failure").inc()
         raise HTTPException(
             status.HTTP_401_UNAUTHORIZED,
             detail="Неверный email или пароль",
         )
     token = create_access_token(subject=str(user.id), role=user.role)
+    AUTH_LOGINS.labels(result="success").inc()
     return schemas.TokenResponse(access_token=token, role=user.role)
 
 

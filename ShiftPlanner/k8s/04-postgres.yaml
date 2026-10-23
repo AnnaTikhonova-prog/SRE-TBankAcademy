@@ -1,0 +1,127 @@
+# PostgreSQL: PersistentVolumeClaim + Deployment + Service.
+#
+# Deployment (а не StatefulSet) выбран осознанно: в учебном стенде одна
+# реплика БД, strategy: Recreate корректно работает с PVC ReadWriteOnce.
+# Данные переживают пересоздание пода благодаря PVC.
+
+---
+# Заявка на постоянное хранилище данных БД (1 ГиБ).
+# minikube создаст PersistentVolume автоматически (hostpath provisioner).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: shiftplanner
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: shiftplanner
+spec:
+  replicas: 1
+  # Recreate: сначала удалить старый под, потом создать новый —
+  # PVC с accessMode ReadWriteOnce нельзя смонтировать в два пода сразу.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9187"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          # POSTGRES_DB / POSTGRES_USER / POSTGRES_PASSWORD подхватывает
+          # официальный образ postgres при инициализации кластера БД.
+          # Лишние ключи из ConfigMap (JWT_* и т.п.) контейнер игнорирует.
+          envFrom:
+            - configMapRef:
+                name: shiftplanner-config
+            - secretRef:
+                name: shiftplanner-secret
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: initdb
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "shiftplanner", "-d", "shiftplanner"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "shiftplanner", "-d", "shiftplanner"]
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+        - name: postgres-exporter
+          image: prometheuscommunity/postgres-exporter:v0.17.1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: metrics
+              containerPort: 9187
+          env:
+            - name: DATA_SOURCE_URI
+              value: "localhost:5432/shiftplanner?sslmode=disable"
+            - name: DATA_SOURCE_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: shiftplanner-config
+                  key: POSTGRES_USER
+            - name: DATA_SOURCE_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: shiftplanner-secret
+                  key: POSTGRES_PASSWORD
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: postgres-pvc
+        - name: initdb
+          configMap:
+            name: postgres-initdb
+
+---
+# Внутренний Service: бэкенд обращается к БД по DNS-имени "postgres".
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: shiftplanner
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
