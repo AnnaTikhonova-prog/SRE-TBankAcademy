@@ -1,0 +1,55 @@
+groups:
+  - name: shiftplanner-service
+    interval: 15s
+    rules:
+      - alert: ShiftPlannerHighRequestErrorRate
+        expr: |
+          sum(rate(shiftplanner_http_requests_total{namespace="shiftplanner",status=~"4..|5..",path!~"/health|/health/db|/metrics"}[5m]))
+          /
+          clamp_min(sum(rate(shiftplanner_http_requests_total{namespace="shiftplanner",path!~"/health|/health/db|/metrics"}[5m])), 1e-9)
+          > 0.10
+        for: 1m
+        labels:
+          severity: warning
+          service: shiftplanner
+        annotations:
+          summary: "Высокая доля HTTP-ошибок ShiftPlanner"
+          description: "Доля ответов 4xx/5xx за 5 минут выше 10% не менее 1 минуты."
+
+      - alert: ShiftPlannerHighP95Latency
+        expr: |
+          histogram_quantile(0.95, sum by (le) (rate(shiftplanner_http_request_duration_seconds_bucket{namespace="shiftplanner",path!~"/health|/health/db|/metrics"}[5m])))
+          > 0.5
+        for: 2m
+        labels:
+          severity: warning
+          service: shiftplanner
+        annotations:
+          summary: "Высокая p95-задержка API ShiftPlanner"
+          description: "p95 времени ответа за 5 минут превышает 500 мс две минуты подряд."
+
+  - name: python-runtime
+    interval: 15s
+    rules:
+      - alert: PythonProcessMemoryHigh
+        expr: process_resident_memory_bytes{namespace="shiftplanner",app="backend"} > 314572800
+        for: 5m
+        labels:
+          severity: warning
+          service: shiftplanner
+        annotations:
+          summary: "Высокое потребление памяти процессом Python"
+          description: "RSS backend-процесса превышает 300 MiB в течение 5 минут."
+
+      - alert: PythonBackendTargetDown
+        expr: |
+          (up{namespace="shiftplanner",app="backend"} == 0)
+          or
+          absent(up{namespace="shiftplanner",app="backend"})
+        for: 1m
+        labels:
+          severity: critical
+          service: shiftplanner
+        annotations:
+          summary: "Python backend недоступен для scrape"
+          description: "VictoriaMetrics не может собрать метрики backend-пода одну минуту."

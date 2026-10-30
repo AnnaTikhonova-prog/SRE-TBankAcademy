@@ -1,0 +1,219 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: shiftplanner-alert-rules
+  namespace: monitoring
+data:
+  alerts.yaml: |
+    groups:
+      - name: shiftplanner-service
+        interval: 15s
+        rules:
+          - alert: ShiftPlannerHighRequestErrorRate
+            expr: |
+              sum(rate(shiftplanner_http_requests_total{namespace="shiftplanner",status=~"4..|5..",path!~"/health|/health/db|/metrics"}[5m]))
+              /
+              clamp_min(sum(rate(shiftplanner_http_requests_total{namespace="shiftplanner",path!~"/health|/health/db|/metrics"}[5m])), 1e-9)
+              > 0.10
+            for: 1m
+            labels:
+              severity: warning
+              service: shiftplanner
+            annotations:
+              summary: "Высокая доля HTTP-ошибок ShiftPlanner"
+              description: "Доля ответов 4xx/5xx за 5 минут выше 10% не менее 1 минуты."
+          - alert: ShiftPlannerHighP95Latency
+            expr: |
+              histogram_quantile(0.95, sum by (le) (rate(shiftplanner_http_request_duration_seconds_bucket{namespace="shiftplanner",path!~"/health|/health/db|/metrics"}[5m])))
+              > 0.5
+            for: 2m
+            labels:
+              severity: warning
+              service: shiftplanner
+            annotations:
+              summary: "Высокая p95-задержка API ShiftPlanner"
+              description: "p95 времени ответа за 5 минут превышает 500 мс две минуты подряд."
+      - name: python-runtime
+        interval: 15s
+        rules:
+          - alert: PythonProcessMemoryHigh
+            expr: process_resident_memory_bytes{namespace="shiftplanner",app="backend"} > 314572800
+            for: 5m
+            labels:
+              severity: warning
+              service: shiftplanner
+            annotations:
+              summary: "Высокое потребление памяти процессом Python"
+              description: "RSS backend-процесса превышает 300 MiB в течение 5 минут."
+          - alert: PythonBackendTargetDown
+            expr: |
+              (up{namespace="shiftplanner",app="backend"} == 0)
+              or
+              absent(up{namespace="shiftplanner",app="backend"})
+            for: 1m
+            labels:
+              severity: critical
+              service: shiftplanner
+            annotations:
+              summary: "Python backend недоступен для scrape"
+              description: "VictoriaMetrics не может собрать метрики backend-пода одну минуту."
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: shiftplanner-alertmanager-config
+  namespace: monitoring
+data:
+  alertmanager.yml: |
+    global:
+      resolve_timeout: 2m
+      smtp_smarthost: mailhog.monitoring.svc.cluster.local:1025
+      smtp_from: alertmanager@shiftplanner.test
+    route:
+      receiver: mailhog
+      group_by: [alertname, namespace]
+      group_wait: 10s
+      group_interval: 30s
+      repeat_interval: 1h
+    receivers:
+      - name: mailhog
+        email_configs:
+          - to: sre-student@shiftplanner.test
+            send_resolved: true
+            require_tls: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alertmanager
+  template:
+    metadata:
+      labels:
+        app: alertmanager
+    spec:
+      containers:
+        - name: alertmanager
+          image: prom/alertmanager:v0.28.1
+          args:
+            - --config.file=/etc/alertmanager/alertmanager.yml
+            - --web.listen-address=:9093
+            - --storage.path=/alertmanager
+          ports:
+            - name: web
+              containerPort: 9093
+          volumeMounts:
+            - name: config
+              mountPath: /etc/alertmanager
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: shiftplanner-alertmanager-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+  namespace: monitoring
+spec:
+  selector:
+    app: alertmanager
+  ports:
+    - name: web
+      port: 9093
+      targetPort: web
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mailhog
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mailhog
+  template:
+    metadata:
+      labels:
+        app: mailhog
+    spec:
+      containers:
+        - name: mailhog
+          image: mailhog/mailhog:v1.0.1
+          ports:
+            - name: smtp
+              containerPort: 1025
+            - name: web
+              containerPort: 8025
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mailhog
+  namespace: monitoring
+spec:
+  selector:
+    app: mailhog
+  ports:
+    - name: smtp
+      port: 1025
+      targetPort: smtp
+    - name: web
+      port: 8025
+      targetPort: web
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vmalert
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vmalert
+  template:
+    metadata:
+      labels:
+        app: vmalert
+    spec:
+      containers:
+        - name: vmalert
+          image: victoriametrics/vmalert:v1.154.0
+          args:
+            - -datasource.url=http://vm-single-victoria-metrics-single-server.monitoring.svc.cluster.local:8428
+            - -notifier.url=http://alertmanager.monitoring.svc.cluster.local:9093
+            - -rule=/etc/vmalert/alerts.yaml
+            - -evaluationInterval=15s
+            - -httpListenAddr=:8880
+          ports:
+            - name: web
+              containerPort: 8880
+          volumeMounts:
+            - name: rules
+              mountPath: /etc/vmalert
+              readOnly: true
+      volumes:
+        - name: rules
+          configMap:
+            name: shiftplanner-alert-rules
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vmalert
+  namespace: monitoring
+spec:
+  selector:
+    app: vmalert
+  ports:
+    - name: web
+      port: 8880
+      targetPort: web

@@ -1,0 +1,18 @@
+global:
+  resolve_timeout: 2m
+  smtp_smarthost: mailhog.monitoring.svc.cluster.local:1025
+  smtp_from: alertmanager@shiftplanner.test
+
+route:
+  receiver: mailhog
+  group_by: [alertname, namespace]
+  group_wait: 10s
+  group_interval: 30s
+  repeat_interval: 1h
+
+receivers:
+  - name: mailhog
+    email_configs:
+      - to: sre-student@shiftplanner.test
+        send_resolved: true
+        require_tls: false
