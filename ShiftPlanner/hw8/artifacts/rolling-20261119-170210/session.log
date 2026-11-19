@@ -1,0 +1,63 @@
+**********************
+PowerShell transcript start
+Start time: 20261119170210
+Username: DESKTOP-4LHEMFI\asus
+RunAs User: DESKTOP-4LHEMFI\asus
+Configuration Name: 
+Machine: DESKTOP-4LHEMFI (Microsoft Windows NT 10.0.22631.0)
+Host Application: C:\Users\asus\.cache\codex-runtimes\codex-primary-runtime\dependencies\native\powershell\pwsh.dll -Command try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+.\ShiftPlanner\hw8\scripts\demo.ps1 -Scenario rolling
+Process ID: 46924
+PSVersion: 7.6.9
+PSEdition: Core
+GitCommitId: 7.6.9
+OS: Microsoft Windows 10.0.22631
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Scenario: rolling
+
+
+
+
+
+version       : 1.0.0
+release       : v1
+headerVersion : {1.0.0}
+headerRelease : {v1}
+
+
+Waiting for deployment "backend" rollout to finish: 1 out of 3 new replicas have been updated...
+Waiting for deployment "backend" rollout to finish: 1 out of 3 new replicas have been updated...
+Waiting for deployment "backend" rollout to finish: 1 out of 3 new replicas have been updated...
+Waiting for deployment "backend" rollout to finish: 2 out of 3 new replicas have been updated...
+Waiting for deployment "backend" rollout to finish: 2 out of 3 new replicas have been updated...
+Waiting for deployment "backend" rollout to finish: 2 out of 3 new replicas have been updated...
+Waiting for deployment "backend" rollout to finish: 2 out of 3 new replicas have been updated...
+Waiting for deployment "backend" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "backend" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "backend" rollout to finish: 1 old replicas are pending termination...
+deployment "backend" successfully rolled out
+
+version       : 2.0.0
+release       : v2
+headerVersion : {2.0.0}
+headerRelease : {v2}
+
+
+
+
+version       : 1.0.0
+release       : v1
+headerVersion : {1.0.0}
+headerRelease : {v1}
+
+
+Saved evidence to C:\Users\asus\PycharmProjects\SRE-TBankAcademy\ShiftPlanner\hw8\artifacts\rolling-20261119-170210
+**********************
+PowerShell transcript end
+End time: 20261119170405
+**********************

@@ -1,0 +1,37 @@
+﻿**********************
+Начало записи сценария Windows PowerShell
+Время начала: 20261119224332
+Имя пользователя: DESKTOP-4LHEMFI\asus
+Запуск от имени пользователя: DESKTOP-4LHEMFI\asus
+Имя конфигурации: 
+Компьютер: DESKTOP-4LHEMFI (Microsoft Windows NT 10.0.22631.0)
+Ведущее приложение: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+ИД процесса: 56004
+PSVersion: 5.1.22621.6133
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.22621.6133
+BuildVersion: 10.0.22621.6133
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Scenario: ab
+
+
+audience           version release
+--------           ------- -------
+default            1.0.0   v1
+X-Experiment: beta 2.0.0   v2
+
+
+
+Recent /version requests in v1 pod logs:
+[pod/backend-v1-7d8d88d78d-49z56/backend] {"timestamp":"2026-11-19T19:43:35.775Z","level":"info","message":"10.244.0.21:43848 - \"GET /version HTTP/1.1\" 200","service":{"name":"shiftplanner-api"},"logger":"uvicorn.access","http":{"client":"10.244.0.21:43848","method":"GET","path":"/version","version":"1.1","status_code":200}}
+Recent /version requests in v2 pod logs:
+[pod/backend-v2-646fb87bc7-t72m4/backend] {"timestamp":"2026-11-19T19:43:35.817Z","level":"info","message":"10.244.0.21:59204 - \"GET /version HTTP/1.1\" 200","service":{"name":"shiftplanner-api"},"logger":"uvicorn.access","http":{"client":"10.244.0.21:59204","method":"GET","path":"/version","version":"1.1","status_code":200}}
+Saved evidence to C:\Users\asus\PycharmProjects\SRE-TBankAcademy\ShiftPlanner\hw8\artifacts\ab-20261119-224332
+**********************
+Конец записи протокола Windows PowerShell
+Время окончания: 20261119224339
+**********************

@@ -4,6 +4,7 @@
 """
 
 import logging
+import os
 import time
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -26,6 +27,8 @@ from app.routers import auth, availability, branches, companies, employees, posi
 logger = logging.getLogger("shiftplanner")
 
 settings = get_settings()
+APP_VERSION = os.getenv("APP_VERSION", "1.0.0")
+APP_RELEASE = os.getenv("APP_RELEASE", "stable")
 
 
 @asynccontextmanager
@@ -38,7 +41,7 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
 
 app = FastAPI(
     title="ShiftPlanner API",
-    version="1.0.0",
+    version=APP_VERSION,
     description="Учебная версия ShiftPlanner: JWT-аутентификация и CRUD для планирования смен.",
     lifespan=lifespan,
 )
@@ -63,6 +66,8 @@ async def collect_http_metrics(request: Request, call_next):
     try:
         response = await call_next(request)
         status_code = response.status_code
+        response.headers["X-App-Version"] = APP_VERSION
+        response.headers["X-App-Release"] = APP_RELEASE
         return response
     finally:
         route = request.scope.get("route")
@@ -85,6 +90,12 @@ app.include_router(shifts.router, prefix="/shifts", tags=["Смены"])
 def health_check():
     """Liveness-проба: процесс жив и обслуживает запросы."""
     return {"status": "ok"}
+
+
+@app.get("/version", tags=["Служебные"])
+def version_info():
+    """Expose immutable release identity for rollout and routing demos."""
+    return {"service": "shiftplanner-backend", "version": APP_VERSION, "release": APP_RELEASE}
 
 
 @app.get("/metrics", include_in_schema=False, tags=["Служебные"])

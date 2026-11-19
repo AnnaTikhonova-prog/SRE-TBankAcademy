@@ -1,0 +1,12 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: shiftplanner-route
+  namespace: shiftplanner
+spec:
+  parentRefs:
+    - name: shiftplanner-gateway
+  rules:
+    - backendRefs:
+        - name: backend-v1
+          port: 8000

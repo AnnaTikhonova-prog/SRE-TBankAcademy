@@ -1,0 +1,61 @@
+﻿**********************
+Начало записи сценария Windows PowerShell
+Время начала: 20261119224141
+Имя пользователя: DESKTOP-4LHEMFI\asus
+Запуск от имени пользователя: DESKTOP-4LHEMFI\asus
+Имя конфигурации: 
+Компьютер: DESKTOP-4LHEMFI (Microsoft Windows NT 10.0.22631.0)
+Ведущее приложение: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+ИД процесса: 56004
+PSVersion: 5.1.22621.6133
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.22621.6133
+BuildVersion: 10.0.22621.6133
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Scenario: canary
+
+Canary stage 90-10
+
+Name Count
+---- -----
+v1      90
+v2      10
+
+
+
+Canary stage 50-50
+
+Name Count
+---- -----
+v1      50
+v2      50
+
+
+
+Canary stage 0-100
+
+Name Count
+---- -----
+v2     100
+
+
+
+Recent /version requests in v1 pod logs:
+[pod/backend-v1-7d8d88d78d-49z56/backend] {"timestamp":"2026-11-19T19:42:11.539Z","level":"info","message":"10.244.0.21:47636 - \"GET /version HTTP/1.1\" 200","service":{"name":"shiftplanner-api"},"logger":"uvicorn.access","http":{"client":"10.244.0.21:47636","method":"GET","path":"/version","version":"1.1","status_code":200}}
+[pod/backend-v1-7d8d88d78d-49z56/backend] {"timestamp":"2026-11-19T19:42:11.865Z","level":"info","message":"10.244.0.21:47636 - \"GET /version HTTP/1.1\" 200","service":{"name":"shiftplanner-api"},"logger":"uvicorn.access","http":{"client":"10.244.0.21:47636","method":"GET","path":"/version","version":"1.1","status_code":200}}
+[pod/backend-v1-7d8d88d78d-49z56/backend] {"timestamp":"2026-11-19T19:42:13.732Z","level":"info","message":"10.244.0.21:47636 - \"GET /version HTTP/1.1\" 200","service":{"name":"shiftplanner-api"},"logger":"uvicorn.access","http":{"client":"10.244.0.21:47636","method":"GET","path":"/version","version":"1.1","status_code":200}}
+[pod/backend-v1-7d8d88d78d-49z56/backend] {"timestamp":"2026-11-19T19:42:13.872Z","level":"info","message":"10.244.0.21:47636 - \"GET /version HTTP/1.1\" 200","service":{"name":"shiftplanner-api"},"logger":"uvicorn.access","http":{"client":"10.244.0.21:47636","method":"GET","path":"/version","version":"1.1","status_code":200}}
+Recent /version requests in v2 pod logs:
+[pod/backend-v2-646fb87bc7-t72m4/backend] {"timestamp":"2026-11-19T19:42:24.518Z","level":"info","message":"10.244.0.21:51378 - \"GET /version HTTP/1.1\" 200","service":{"name":"shiftplanner-api"},"logger":"uvicorn.access","http":{"client":"10.244.0.21:51378","method":"GET","path":"/version","version":"1.1","status_code":200}}
+[pod/backend-v2-646fb87bc7-t72m4/backend] {"timestamp":"2026-11-19T19:42:24.571Z","level":"info","message":"10.244.0.21:51378 - \"GET /version HTTP/1.1\" 200","service":{"name":"shiftplanner-api"},"logger":"uvicorn.access","http":{"client":"10.244.0.21:51378","method":"GET","path":"/version","version":"1.1","status_code":200}}
+[pod/backend-v2-646fb87bc7-t72m4/backend] {"timestamp":"2026-11-19T19:42:24.671Z","level":"info","message":"10.244.0.21:51378 - \"GET /version HTTP/1.1\" 200","service":{"name":"shiftplanner-api"},"logger":"uvicorn.access","http":{"client":"10.244.0.21:51378","method":"GET","path":"/version","version":"1.1","status_code":200}}
+[pod/backend-v2-646fb87bc7-t72m4/backend] {"timestamp":"2026-11-19T19:42:24.721Z","level":"info","message":"10.244.0.21:51378 - \"GET /version HTTP/1.1\" 200","service":{"name":"shiftplanner-api"},"logger":"uvicorn.access","http":{"client":"10.244.0.21:51378","method":"GET","path":"/version","version":"1.1","status_code":200}}
+Saved evidence to C:\Users\asus\PycharmProjects\SRE-TBankAcademy\ShiftPlanner\hw8\artifacts\canary-20261119-224141
+**********************
+Конец записи протокола Windows PowerShell
+Время окончания: 20261119224229
+**********************

@@ -2,6 +2,11 @@
 ARG BASE_IMAGE=python:3.12-slim
 FROM ${BASE_IMAGE}
 
+ARG APP_VERSION=1.0.0
+ARG APP_RELEASE=stable
+ENV APP_VERSION=${APP_VERSION} \
+    APP_RELEASE=${APP_RELEASE}
+
 WORKDIR /app
 
 # Сначала копируем только requirements.txt, чтобы слой с зависимостями

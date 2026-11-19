@@ -1,0 +1,11 @@
+NAME                          READY   STATUS    RESTARTS       AGE     IP            NODE       NOMINATED NODE   READINESS GATES
+backend-5cbbd47b45-dlkdz      1/1     Running   0              61s     10.244.0.30   minikube   <none>           <none>
+backend-5cbbd47b45-ljjk5      1/1     Running   0              73s     10.244.0.29   minikube   <none>           <none>
+backend-5cbbd47b45-swzm7      1/1     Running   0              85s     10.244.0.28   minikube   <none>           <none>
+backend-v1-7d8d88d78d-49z56   1/1     Running   0              7m35s   10.244.0.18   minikube   <none>           <none>
+backend-v1-7d8d88d78d-hksj9   1/1     Running   0              7m35s   10.244.0.17   minikube   <none>           <none>
+backend-v2-646fb87bc7-rrs2v   1/1     Running   0              7m35s   10.244.0.19   minikube   <none>           <none>
+backend-v2-646fb87bc7-t72m4   1/1     Running   0              7m35s   10.244.0.20   minikube   <none>           <none>
+frontend-77dcc4889c-prvrl     1/1     Running   16 (12m ago)   40d     10.244.0.5    minikube   <none>           <none>
+postgres-58d679497b-9rsmj     2/2     Running   8 (13m ago)    26d     10.244.0.12   minikube   <none>           <none>
+vector-gg657                  1/1     Running   5 (13m ago)    33d     10.244.0.3    minikube   <none>           <none>

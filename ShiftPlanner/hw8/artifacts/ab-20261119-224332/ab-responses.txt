@@ -1,0 +1,2 @@
+﻿default: {"version":"1.0.0","release":"v1","headerVersion":"1.0.0","headerRelease":"v1"}
+beta: {"service":"shiftplanner-backend","version":"2.0.0","release":"v2"}
