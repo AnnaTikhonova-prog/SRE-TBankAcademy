@@ -1,0 +1,53 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"gateway.networking.k8s.io/v1","kind":"HTTPRoute","metadata":{"annotations":{},"name":"shiftplanner-route","namespace":"shiftplanner"},"spec":{"parentRefs":[{"name":"shiftplanner-gateway"}],"rules":[{"backendRefs":[{"name":"backend-v1","port":8000,"weight":90},{"name":"backend-v2","port":8000,"weight":10}],"matches":[{"path":{"type":"PathPrefix","value":"/"}}]}]}}
+  creationTimestamp: "2026-11-19T13:54:40Z"
+  generation: 28
+  name: shiftplanner-route
+  namespace: shiftplanner
+  resourceVersion: "328256"
+  uid: 19ec8aad-f109-49c2-8e6a-5c15d63ec077
+spec:
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: shiftplanner-gateway
+  rules:
+  - backendRefs:
+    - group: ""
+      kind: Service
+      name: backend-v1
+      port: 8000
+      weight: 90
+    - group: ""
+      kind: Service
+      name: backend-v2
+      port: 8000
+      weight: 10
+    matches:
+    - path:
+        type: PathPrefix
+        value: /
+status:
+  parents:
+  - conditions:
+    - lastTransitionTime: "2026-11-26T10:06:06Z"
+      message: Route is accepted
+      observedGeneration: 28
+      reason: Accepted
+      status: "True"
+      type: Accepted
+    - lastTransitionTime: "2026-11-26T10:06:06Z"
+      message: Resolved all the Object references for the Route
+      observedGeneration: 28
+      reason: ResolvedRefs
+      status: "True"
+      type: ResolvedRefs
+    controllerName: gateway.envoyproxy.io/gatewayclass-controller
+    parentRef:
+      group: gateway.networking.k8s.io
+      kind: Gateway
+      name: shiftplanner-gateway

@@ -1,0 +1,5 @@
+NAME                              READY   STATUS    RESTARTS        AGE     IP            NODE       NOMINATED NODE   READINESS GATES
+pod/backend-v1-7d8d88d78d-49z56   1/1     Running   1 (2m38s ago)   6d20h   10.244.0.10   minikube   <none>           <none>
+pod/backend-v1-7d8d88d78d-hksj9   1/1     Running   2 (111s ago)    6d20h   10.244.0.5    minikube   <none>           <none>
+pod/backend-v2-646fb87bc7-rrs2v   1/1     Running   2 (110s ago)    6d20h   10.244.0.12   minikube   <none>           <none>
+pod/backend-v2-646fb87bc7-t72m4   1/1     Running   1 (2m38s ago)   6d20h   10.244.0.18   minikube   <none>           <none>
